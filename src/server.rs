@@ -2,6 +2,8 @@ use std::{
     collections::{
         HashMap,
     },
+    sync::Arc,
+    path::PathBuf,
 };
 
 type Name = Arc<str>;

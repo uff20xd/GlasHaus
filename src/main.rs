@@ -1,14 +1,12 @@
 mod filepoler;
 mod gmd_parser;
 mod server;
+mod error;
 
+use filepoler::*;
 use clap::{
     Parser,
     Subcommand,
-};
-use tokio::{
-    task,
-    sync::*,
 };
 
 #[derive(Parser, Debug)]
@@ -38,7 +36,12 @@ async fn main() {
         CliArgs::Start { name } => { todo!( ) },
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting, new_value } => { todo!( ) },
-        CliArgs::Test => { todo!( ) },
+        CliArgs::Test => { 
+            let mut poler = Poller::new("./tests/");
+            tokio::spawn(async move {
+                let _ = poler.poll();
+            });
+        },
     }
     println!("Hello, world!");
 }
