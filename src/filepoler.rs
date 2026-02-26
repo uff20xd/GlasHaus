@@ -26,11 +26,11 @@ impl Poller {
             new_change_date: SystemTime::UNIX_EPOCH,
         }
     }
-    pub async fn poll(&mut self) -> bool {
+    pub async fn start(mut self) -> bool {
         println!("in poll");
         loop {
             println!("in poll loop");
-            let search = self.search_dir();
+            let search = self.poll();
             let _sleep = sleep(Duration::from_secs(2)).await;
             let _ = match search.await {
                 Err(_) => {break},
@@ -39,7 +39,7 @@ impl Poller {
         }
         false
     }
-    pub async fn search_dir(&mut self) -> Result<(), GlassError> {
+    pub async fn poll(&mut self) -> Result<(), GlassError> {
         let dir = self.path.read_dir().unwrap();
         for i in dir {
             let file = i.unwrap();

@@ -38,10 +38,7 @@ async fn main() {
         CliArgs::Config { setting, new_value } => { todo!( ) },
         CliArgs::Test => { 
             loop {
-                let mut poler = Poller::new("./tests/");
-                tokio::spawn(async move {
-                    let _ = poler.poll();
-                });
+                tokio::spawn(Poller::new("./tests/").start());
             }
         },
     }
