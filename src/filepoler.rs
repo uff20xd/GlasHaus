@@ -7,21 +7,23 @@ use tokio::{
         sleep,
         Duration,
     },
+    task,
+    sync::mpsc::Sender,
 };
 use crate::error::*;
 
 pub struct Poller {
     path: PathBuf,
-    changed_files: Vec<PathBuf>,
+    channel: Sender<PathBuf>,
     change_date: SystemTime,
     new_change_date: SystemTime,
 }
 
 impl Poller {
-    pub fn new(path: impl AsRef<Path>) -> Self {
+    pub fn new(path: impl AsRef<Path>, sender: Sender<PathBuf>) -> Self {
         Self {
             path: path.as_ref().to_owned(),
-            changed_files: Vec::new(),
+            channel: sender,
             change_date: SystemTime::UNIX_EPOCH,
             new_change_date: SystemTime::UNIX_EPOCH,
         }
@@ -36,7 +38,6 @@ impl Poller {
                 _ => {}
             };
             self.change_date = self.new_change_date;
-            println!("To Change: {:?}", self.changed_files);
         }
         false
     }
@@ -48,7 +49,7 @@ impl Poller {
             let modified = metadata.modified().unwrap();
             if self.change_date < modified {
                 println!("Recognised Modified File: {}", file.path().display());
-                self.changed_files.push(file.path());
+                _ = self.channel.send(file.path()).await;
                 if self.new_change_date < modified {
                     self.new_change_date = modified;
                 }

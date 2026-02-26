@@ -8,6 +8,10 @@ use clap::{
     Parser,
     Subcommand,
 };
+use tokio::{
+    sync::mpsc,
+    task,
+};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -37,7 +41,15 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            tokio::spawn(Poller::new("./tests/").start());
+            let (sender, mut receiver) = mpsc::channel(100);
+            tokio::spawn(async move {
+                Poller::new("./tests/", sender).start().await;
+            });
+            tokio::spawn(async move {
+                while let Some(file) = receiver.recv().await {
+                    println!("Processing File {}", file.display());
+                }
+            });
             loop {}
         },
     }
