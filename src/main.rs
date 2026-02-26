@@ -37,11 +37,12 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting, new_value } => { todo!( ) },
         CliArgs::Test => { 
-            let mut poler = Poller::new("./tests/");
-            tokio::spawn(async move {
-                let _ = poler.poll();
-            });
+            loop {
+                let mut poler = Poller::new("./tests/");
+                tokio::spawn(async move {
+                    let _ = poler.poll();
+                });
+            }
         },
     }
-    println!("Hello, world!");
 }

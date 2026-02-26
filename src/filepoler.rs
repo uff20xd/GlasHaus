@@ -27,7 +27,9 @@ impl Poller {
         }
     }
     pub async fn poll(&mut self) -> bool {
+        println!("in poll");
         loop {
+            println!("in poll loop");
             let search = self.search_dir();
             let _sleep = sleep(Duration::from_secs(2)).await;
             let _ = match search.await {
