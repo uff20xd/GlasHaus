@@ -1,5 +1,4 @@
 mod filepoler;
-mod gmd_parser;
 mod server;
 mod error;
 
