@@ -29,13 +29,14 @@ impl Poller {
     pub async fn start(mut self) -> bool {
         println!("in poll");
         loop {
-            println!("in poll loop");
             let search = self.poll();
             let _sleep = sleep(Duration::from_secs(2)).await;
             let _ = match search.await {
                 Err(_) => {break},
                 _ => {}
             };
+            self.change_date = self.new_change_date;
+            println!("To Change: {:?}", self.changed_files);
         }
         false
     }

@@ -37,9 +37,8 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            loop {
-                tokio::spawn(Poller::new("./tests/").start());
-            }
+            tokio::spawn(Poller::new("./tests/").start());
+            loop {}
         },
     }
 }
