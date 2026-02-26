@@ -22,5 +22,5 @@ impl Display for GlassError {
 impl Error for GlassError {}
 
 impl From<Box<dyn Error + 'static>> for GlassError {
-    fn from(value: Box<dyn Error + 'static>) -> Self { todo!() }
+    fn from(_value: Box<dyn Error + 'static>) -> Self { todo!() }
 }

@@ -33,9 +33,9 @@ enum CliArgs {
 async fn main() {
     let args = Args::parse();
     match args.command {
-        CliArgs::Start { name } => { todo!( ) },
+        CliArgs::Start { name: _ } => { todo!( ) },
         CliArgs::Init  => { todo!( ) },
-        CliArgs::Config { setting, new_value } => { todo!( ) },
+        CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
             loop {
                 tokio::spawn(Poller::new("./tests/").start());
