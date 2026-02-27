@@ -1,6 +1,5 @@
 mod filepoler;
 mod server;
-mod error;
 
 use filepoler::*;
 use clap::{
@@ -9,8 +8,9 @@ use clap::{
 };
 use tokio::{
     sync::mpsc,
-    task,
 };
+
+pub type GResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

@@ -9,7 +9,7 @@ use tokio::{
     },
     sync::mpsc::Sender,
 };
-use crate::error::*;
+use crate::GResult;
 
 pub struct Poller {
     path: PathBuf,
@@ -40,7 +40,7 @@ impl Poller {
         }
         false
     }
-    pub async fn poll(&mut self) -> Result<(), GlassError> {
+    pub async fn poll(&mut self) -> GResult<()> {
         let dir = self.path.read_dir().unwrap();
         for i in dir {
             let file = i.unwrap();
