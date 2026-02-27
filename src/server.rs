@@ -2,10 +2,10 @@ use std::{
     collections::{
         HashMap,
         HashSet,
-    }, io::Read, path::{Path, PathBuf}, sync::Arc,
+    }, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::AsyncReadExt, sync::{RwLock, mpsc::Receiver}
+    io::{AsyncReadExt, Stdin, Stdout}, sync::{RwLock, mpsc::{Receiver, Sender}}
 };
 use crate::GResult;
 
@@ -15,8 +15,8 @@ type TagPath = Arc<Path>;
 
 pub struct GlasHaus {
     config_path: Arc<Path>,
-    pub known_files: HashMap<Name, PathBuf>,
-    pub        tags: HashMap<Tag, HashSet<TagPath>>,
+    pub known_files: HashMap<Name, TagPath>,
+    pub        tags: HashMap<Tag, HashSet<Name>>,
 }
 
 impl GlasHaus {
@@ -32,7 +32,7 @@ impl GlasHaus {
         let config_path = self.config_path.clone();
         let wrapped_self = RwLock::new(self);
         tokio::spawn(async move {
-            Parser::new(receiver, wrapped_self, config_path.clone()).start();
+            Parser::new(receiver, wrapped_self, config_path.clone()).start().await;
         });
         loop {}
     }
@@ -66,7 +66,7 @@ impl Parser {
         }
         todo!()
     }
-    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<TagPath>>> {
+    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
@@ -100,3 +100,30 @@ impl Parser {
     }
 }
 
+pub enum GLAPICommand {
+    QueryTag(String),
+    QueryTags(Vec<String>),
+    GetNameOrAlias(String),
+    None
+}
+
+pub enum GLAPIResponse {
+    QueryResponse(Vec<(Name, TagPath)>),
+    Name(Name),
+    None
+}
+
+pub struct GlasSocket {
+    stdin: Stdin,
+    stdout: Stdout,
+}
+
+impl GlasSocket {
+    pub fn new() -> Self { todo!("Implement new for GlasSocket") }
+    pub async fn response(&mut self, response: GLAPIResponse) -> () {
+        todo!("Implement response for GlasSocket")
+    }
+    pub async fn receive(&mut self) -> GLAPICommand {
+        todo!("Implement receive for GlasSocket")
+    }
+}
