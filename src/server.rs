@@ -5,7 +5,7 @@ use std::{
     }, io::Read, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::AsyncReadExt, sync::{RwLock, mpsc::{Receiver, Sender}}
+    io::AsyncReadExt, sync::{RwLock, mpsc::Receiver}
 };
 use crate::GResult;
 
@@ -28,7 +28,7 @@ impl GlasHaus {
         }
     }
 
-    pub async fn start(mut self, receiver: Receiver<PathBuf>) -> () {
+    pub async fn start(self, receiver: Receiver<PathBuf>) -> () {
         let config_path = self.config_path.clone();
         let wrapped_self = RwLock::new(self);
         tokio::spawn(async move {
@@ -95,7 +95,7 @@ impl Parser {
         }
         Ok(tags)
     }
-    async fn parse_md(&self, file: PathBuf) -> GResult<()> {
+    async fn parse_md(&self, _file: PathBuf) -> GResult<()> {
         todo!()
     }
 }
