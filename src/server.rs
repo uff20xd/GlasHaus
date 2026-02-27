@@ -2,13 +2,12 @@ use std::{
     collections::{
         HashMap,
         HashSet,
-    },
-    rc::Rc,
-    path::{PathBuf, Path},
+    }, io::Read, path::{Path, PathBuf}, rc::Rc
 };
 use tokio::{
     sync::RwLock,
-    sync::mpsc::Receiver
+    sync::mpsc::Receiver,
+    io::AsyncReadExt
 };
 use crate::GResult;
 
@@ -16,8 +15,8 @@ type Name = Rc<str>;
 type Tag = Name;
 
 pub struct GlasHaus {
-    known_files: HashMap<Name, PathBuf>,
-           tags: HashMap<Tag, HashSet<Name>>,
+    pub known_files: HashMap<Name, PathBuf>,
+    pub        tags: HashMap<Tag, HashSet<Name>>,
 }
 
 impl GlasHaus {
@@ -39,14 +38,25 @@ struct Parser {
     runtime: RwLock<GlasHaus>,
 }
 impl Parser {
-    pub async fn parse_tag_file(&self, path: &Path) -> GResult<HashMap<Tag, HashSet<Name>>> {
+    pub fn new(
+        receiver: Receiver<PathBuf>,
+        runtime: RwLock<GlasHaus>
+    ) -> Self {
+        Self {
+            receiver,
+            runtime,
+        }
+    }
+    pub async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
         let mut file;
+        let mut source = String::new();
+        let path = path.as_ref();
         if !path.exists()  {
-
+            file = tokio::fs::File::create_new(path).await?;
         }
-        else if !path.is_file() {
-        }
-        else {file = std::fs::File::open(path);}
+        else {file = tokio::fs::File::open(path).await?;}
+        let _ = file.read_to_string(&mut source).await?;
+        let mut lines = source.lines();
         todo!()
     }
 
@@ -54,8 +64,12 @@ impl Parser {
         todo!()
     }
     pub async fn parser(mut self, runtime: RwLock<GlasHaus>, mut receiver: Receiver<PathBuf>) -> () {
+        {
+            let glashaus = runtime.write();
+            let map = self.parse_tag_file("");
+        }
         while let Some(file) = receiver.recv().await {
-            self.parse_md(file);
+            _ = self.parse_md(file);
         }
         todo!()
     }
