@@ -2,52 +2,71 @@ use std::{
     collections::{
         HashMap,
         HashSet,
-    }, io::Read, path::{Path, PathBuf}, rc::Rc
+    }, io::Read, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    sync::RwLock,
-    sync::mpsc::Receiver,
-    io::AsyncReadExt
+    io::AsyncReadExt, sync::{RwLock, mpsc::{Receiver, Sender}}
 };
 use crate::GResult;
 
-type Name = Rc<str>;
+type Name = Arc<str>;
 type Tag = Name;
+type TagPath = Arc<Path>;
 
 pub struct GlasHaus {
+    config_path: Arc<Path>,
     pub known_files: HashMap<Name, PathBuf>,
-    pub        tags: HashMap<Tag, HashSet<Name>>,
+    pub        tags: HashMap<Tag, HashSet<TagPath>>,
 }
 
 impl GlasHaus {
-    pub fn new() -> Self {
+    pub fn new(config_path: Arc<Path>) -> Self {
         Self {
+            config_path,
             known_files: HashMap::new(),
             tags:        HashMap::new(),
         }
     }
 
-    pub async fn start(mut self) -> () {
+    pub async fn start(mut self, receiver: Receiver<PathBuf>) -> () {
+        let config_path = self.config_path.clone();
         let wrapped_self = RwLock::new(self);
-        todo!()
+        tokio::spawn(async move {
+            Parser::new(receiver, wrapped_self, config_path.clone()).start();
+        });
+        loop {}
     }
 }
 
 struct Parser {
     receiver: Receiver<PathBuf>,
     runtime: RwLock<GlasHaus>,
+    config_path: Arc<Path>,
 }
 impl Parser {
     pub fn new(
         receiver: Receiver<PathBuf>,
-        runtime: RwLock<GlasHaus>
+        runtime: RwLock<GlasHaus>,
+        config_path: Arc<Path>,
     ) -> Self {
         Self {
             receiver,
             runtime,
+            config_path,
         }
     }
-    pub async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
+    pub async fn start(mut self) -> () {
+        {
+            let map = self.parse_tag_file("").await.expect("Currently cant really error out.");
+            let mut glashaus = self.runtime.write().await;
+            glashaus.tags = map;
+        }
+        while let Some(file) = self.receiver.recv().await {
+            _ = self.parse_md(file);
+        }
+        todo!()
+    }
+    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<TagPath>>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
@@ -56,21 +75,28 @@ impl Parser {
         }
         else {file = tokio::fs::File::open(path).await?;}
         let _ = file.read_to_string(&mut source).await?;
-        let mut lines = source.lines();
-        todo!()
-    }
 
-    pub async fn parse_md(&self, file: PathBuf) -> GResult<()> {
-        todo!()
+        let lines = source.lines();
+        let mut tags = HashMap::new();
+        let mut tagged_names = HashSet::new();
+        let mut tag = Arc::from("");
+        let mut designator_char;
+        for i in lines {
+            designator_char = i.chars().next().unwrap_or_else(|| ' ');
+            _ = match designator_char {
+                '#' => {
+                    _ = tags.insert(tag, tagged_names.clone());
+                    _ = tagged_names.clear();
+                    tag = Arc::from(&i[1..]);
+                },
+                ';' => _ = tagged_names.insert(Arc::from((&i[1..]).as_ref())),
+                _ => continue,
+            };
+        }
+        Ok(tags)
     }
-    pub async fn parser(mut self, runtime: RwLock<GlasHaus>, mut receiver: Receiver<PathBuf>) -> () {
-        {
-            let glashaus = runtime.write();
-            let map = self.parse_tag_file("");
-        }
-        while let Some(file) = receiver.recv().await {
-            _ = self.parse_md(file);
-        }
+    async fn parse_md(&self, file: PathBuf) -> GResult<()> {
         todo!()
     }
 }
+

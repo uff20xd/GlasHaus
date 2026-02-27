@@ -1,5 +1,6 @@
 mod filepoler;
 mod server;
+mod socket;
 
 use filepoler::*;
 use clap::{
