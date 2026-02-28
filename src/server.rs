@@ -5,7 +5,7 @@ use std::{
     }, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::{AsyncReadExt, Stdin, Stdout}, sync::{RwLock, mpsc::{Receiver, Sender}}
+    io::{AsyncReadExt, Stdin, Stdout}, sync::{RwLock, mpsc::Receiver}
 };
 use crate::GResult;
 
@@ -67,6 +67,35 @@ impl Parser {
         todo!()
     }
     async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
+        let mut file;
+        let mut source = String::new();
+        let path = path.as_ref();
+        if !path.exists()  {
+            file = tokio::fs::File::create_new(path).await?;
+        }
+        else {file = tokio::fs::File::open(path).await?;}
+        let _ = file.read_to_string(&mut source).await?;
+
+        let lines = source.lines();
+        let mut tags = HashMap::new();
+        let mut tagged_names = HashSet::new();
+        let mut tag = Arc::from("");
+        let mut designator_char;
+        for i in lines {
+            designator_char = i.chars().next().unwrap_or_else(|| ' ');
+            _ = match designator_char {
+                '#' => {
+                    _ = tags.insert(tag, tagged_names.clone());
+                    _ = tagged_names.clear();
+                    tag = Arc::from(&i[1..]);
+                },
+                ';' => _ = tagged_names.insert(Arc::from((&i[1..]).as_ref())),
+                _ => continue,
+            };
+        }
+        Ok(tags)
+    }
+    async fn parse_name_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
