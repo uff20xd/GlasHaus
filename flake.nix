@@ -22,7 +22,6 @@
           pname = "glashaus";
           version = "0.0.1";
           src = ./.;
-          cargoHash = "";
           cargoLock = {
             lockFile = "${src}/Cargo.lock";
           };
