@@ -5,7 +5,7 @@ use std::{
     }, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt, Stdin, Stdout}, sync::{RwLock, mpsc::Receiver}
+    io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}
 };
 use crate::GResult;
 
@@ -38,6 +38,28 @@ impl GlasHaus {
         loop {
 
         }
+    }
+    pub fn query_tags(&self, tags: Vec<Tag>) -> String {
+        let elseh = HashSet::new();
+        let mut names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
+        let mut query: std::collections::LinkedList<&Name> = names
+            .iter()
+            .filter(|name| 
+                !tags
+                .iter()
+                .any(|tag| tag.contains(&(***name)))
+                )
+            .collect();
+        let mut ret: String;
+        if let Some(name) = query.pop_front() {
+            ret = (**name).into();
+        } else {
+            ret = String::new();
+        }
+        for name in query {
+            ret = ret + "\n" + name.as_ref();
+        }
+        ret
     }
 }
 
@@ -127,7 +149,7 @@ impl Parser {
         Ok(names_to_path)
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
-        let mut file;
+    let mut file;
         let mut source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
@@ -156,19 +178,4 @@ pub enum GLAPIResponse {
     QueryResponse(Vec<(Name, TagPath)>),
     Name(Name),
     None
-}
-
-pub struct GlasSocket {
-    stdin: Stdin,
-    stdout: Stdout,
-}
-
-impl GlasSocket {
-    pub fn new() -> Self { todo!("Implement new for GlasSocket") }
-    pub async fn response(&mut self, response: GLAPIResponse) -> () {
-        todo!("Implement response for GlasSocket")
-    }
-    pub async fn receive(&mut self) -> GLAPICommand {
-        todo!("Implement receive for GlasSocket")
-    }
 }
