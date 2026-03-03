@@ -5,7 +5,7 @@ use std::{
     }, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::{AsyncReadExt, Stdin, Stdout}, sync::{RwLock, mpsc::Receiver}
+    io::{AsyncReadExt, AsyncWriteExt, Stdin, Stdout}, sync::{RwLock, mpsc::Receiver}
 };
 use crate::GResult;
 
@@ -31,10 +31,13 @@ impl GlasHaus {
     pub async fn start(self, receiver: Receiver<PathBuf>) -> () {
         let config_path = self.config_path.clone();
         let wrapped_self = RwLock::new(self);
+        // let mut io_socket = GlasSocket::new();
         tokio::spawn(async move {
             Parser::new(receiver, wrapped_self, config_path.clone()).start().await;
         });
-        loop {}
+        loop {
+
+        }
     }
 }
 
@@ -95,7 +98,7 @@ impl Parser {
         }
         Ok(tags)
     }
-    async fn parse_name_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
+    async fn parse_name_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Name, TagPath>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
@@ -106,23 +109,36 @@ impl Parser {
         let _ = file.read_to_string(&mut source).await?;
 
         let lines = source.lines();
-        let mut tags = HashMap::new();
-        let mut tagged_names = HashSet::new();
-        let mut tag = Arc::from("");
+        let mut names_to_path = HashMap::new();
+        let mut current_name: Name = Arc::from("");
         let mut designator_char;
         for i in lines {
             designator_char = i.chars().next().unwrap_or_else(|| ' ');
             _ = match designator_char {
-                '#' => {
-                    _ = tags.insert(tag, tagged_names.clone());
-                    _ = tagged_names.clear();
-                    tag = Arc::from(&i[1..]);
+                '=' => {
+                    names_to_path.insert(current_name.clone(), Arc::from((&i[1..]).as_ref()));
                 },
-                ';' => _ = tagged_names.insert(Arc::from((&i[1..]).as_ref())),
+                ';' => {
+                    current_name = Arc::from((&i[1..]).as_ref());
+                },
                 _ => continue,
             };
         }
-        Ok(tags)
+        Ok(names_to_path)
+    }
+    async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
+        let mut file;
+        let mut source = String::new();
+        let path = path.as_ref();
+        if !path.exists()  {
+            file = tokio::fs::File::create_new(path).await?;
+        }
+        else {file = tokio::fs::File::open(path).await?;}
+        // file.write_buf(src)
+        todo!()
+    }
+    async fn compile_tag_file() -> GResult<()>  {
+        todo!()
     }
     async fn parse_md(&self, _file: PathBuf) -> GResult<()> {
         todo!()
