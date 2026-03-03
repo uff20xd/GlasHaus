@@ -40,7 +40,7 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            let (sender, mut receiver) = mpsc::channel(100);
+            let (sender, mut receiver) = mpsc::channel(5000);
             tokio::spawn(async move {
                 Poller::new("./tests/", sender).start().await;
             });
