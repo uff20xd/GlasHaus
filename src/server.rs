@@ -15,15 +15,15 @@ type TagPath = Arc<Path>;
 
 pub struct GlasHaus {
     config_path: Arc<Path>,
-    pub known_files: HashMap<Name, TagPath>,
-    pub        tags: HashMap<Tag, HashSet<Name>>,
+    pub names: HashMap<Name, TagPath>,
+    pub  tags: HashMap<Tag, HashSet<Name>>,
 }
 
 impl GlasHaus {
     pub fn new(config_path: Arc<Path>) -> Self {
         Self {
             config_path,
-            known_files: HashMap::new(),
+            names: HashMap::new(),
             tags:        HashMap::new(),
         }
     }
@@ -149,15 +149,23 @@ impl Parser {
         Ok(names_to_path)
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
-    let mut file;
+        let mut file;
         let mut source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
             file = tokio::fs::File::create_new(path).await?;
         }
         else {file = tokio::fs::File::open(path).await?;}
-        // file.write_buf(src)
-        todo!()
+        let read_lock = self.runtime.read().await;
+        let mut names = read_lock.names.clone();
+        drop(read_lock);
+        let mut buf = String::new();
+        for (name, path) in names.iter() {
+            buf = buf + name + "\n" + 
+                &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
+        }
+        file.write(buf.as_bytes()).await?;
+        Ok(())
     }
     async fn compile_tag_file() -> GResult<()>  {
         todo!()
