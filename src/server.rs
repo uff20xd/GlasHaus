@@ -170,13 +170,42 @@ impl Parser {
     async fn compile_tag_file() -> GResult<()>  {
         todo!()
     }
-<<<<<<< Updated upstream
-    async fn parse_md(&mut self, _file: PathBuf) -> GResult<()> {
-        todo!()
-=======
-    async fn parse_md(&self, _file: TagPath) -> GResult<()> {
+    async fn parse_md(&self, path: PathBuf) -> GResult<()> {
+        let mut file;
+        let mut source = String::new();
+        if !path.exists()  {
+            file = tokio::fs::File::create_new(path).await?;
+        }
+        else {file = tokio::fs::File::open(path).await?;}
+        _ = file.read_to_string(&mut source).await;
 
->>>>>>> Stashed changes
+        let mut sections: HashMap<String, usize> = HashMap::new();
+        let mut key_buf = String::new();
+        let mut directive_found = false;
+        for (index, line) in source.lines().enumerate() {
+            if line.chars().next().unwrap_or_else(|| ' ') == '#' {
+                sections.insert(line[1..0].trim_ascii().to_owned(), index);
+                continue
+            }
+            for char in line.chars() {
+                if !directive_found {
+                    if char == '@' {
+                        directive_found = true;
+                    }
+                } else {
+                    if key_buf == "tags" {
+                    }
+                    else if key_buf == "alias" {
+                    }
+                    else if key_buf == "["{
+                    }
+                    else {
+                        key_buf.push(char);
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 
