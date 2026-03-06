@@ -170,8 +170,13 @@ impl Parser {
     async fn compile_tag_file() -> GResult<()>  {
         todo!()
     }
+<<<<<<< Updated upstream
     async fn parse_md(&mut self, _file: PathBuf) -> GResult<()> {
         todo!()
+=======
+    async fn parse_md(&self, _file: TagPath) -> GResult<()> {
+
+>>>>>>> Stashed changes
     }
 }
 
