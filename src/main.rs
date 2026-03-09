@@ -2,6 +2,10 @@ mod filepoler;
 mod server;
 
 use filepoler::*;
+use server::GlasHaus;
+use std::{
+    path::Path,
+};
 use clap::{
     Parser,
     Subcommand,
@@ -45,7 +49,7 @@ async fn main() {
                 Poller::new("./tests/", sender).start().await;
             });
             tokio::spawn(async move {
-                GlasHaus::new("".into()).start(receiver).await;
+                GlasHaus::new(Path::new("").into()).start(receiver).await;
             });
             loop {}
         },
