@@ -246,6 +246,14 @@ impl Parser {
     }
 }
 
+pub struct Config {
+    house_path: PathBuf,
+}
+
+impl Config {
+    fn from_file() -> Arc<Self> { todo!("") }
+}
+
 pub enum GLAPICommand {
     QueryTag(String),
     QueryTags(Vec<String>),
