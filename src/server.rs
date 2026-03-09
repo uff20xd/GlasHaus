@@ -170,37 +170,56 @@ impl Parser {
     async fn compile_tag_file() -> GResult<()>  {
         todo!()
     }
-    async fn parse_md(&self, path: PathBuf) -> GResult<()> {
+    async fn parse_md(&mut self, path: PathBuf) -> GResult<()> {
         let mut file;
         let mut source = String::new();
         if !path.exists()  {
-            file = tokio::fs::File::create_new(path).await?;
+            file = tokio::fs::File::create_new(&path).await?;
         }
-        else {file = tokio::fs::File::open(path).await?;}
+        else {file = tokio::fs::File::open(&path).await?;}
         _ = file.read_to_string(&mut source).await;
 
+        let path_to_self: TagPath = path.into();
         let mut sections: HashMap<String, usize> = HashMap::new();
+        let mut tags: HashMap<Tag, Name> = HashMap::new();
+        let mut names: HashMap<Name, TagPath> = HashMap::new();
         let mut key_buf = String::new();
         let mut directive_found = false;
+        let mut escmode = false;
+        let mut string_buf = String::new();
         for (index, line) in source.lines().enumerate() {
             if line.chars().next().unwrap_or_else(|| ' ') == '#' {
                 sections.insert(line[1..0].trim_ascii().to_owned(), index);
                 continue
             }
-            for char in line.chars() {
+            for character in line.chars() {
                 if !directive_found {
-                    if char == '@' {
+                    if character == '@' {
                         directive_found = true;
                     }
                 } else {
                     if key_buf == "tags" {
+                        if escmode {
+                            string_buf.push(character);
+                            continue;
+                        }
+                        else if character == '\\' {
+                            escmode = true;
+                            continue;
+                        }
+                        else if character == ' ' {
+
+                            continue;
+                        }
                     }
                     else if key_buf == "alias" {
                     }
                     else if key_buf == "["{
                     }
+                    else if key_buf == "pic" {
+                    }
                     else {
-                        key_buf.push(char);
+                        key_buf.push(character);
                     }
                 }
             }
