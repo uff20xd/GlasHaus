@@ -180,10 +180,11 @@ impl Parser {
         _ = file.read_to_string(&mut source).await;
 
         let path_to_self: TagPath = path.into();
-        let this_name = path_to_self.file_stem().unwrap_or_else(|| "".into())
+        let this_name: Name = path_to_self.file_stem().expect("File doesnt have a name for some reason.").to_string_lossy().into();
         let mut sections: HashMap<String, usize> = HashMap::new();
         let mut tags: HashMap<Tag, Name> = HashMap::new();
         let mut names: HashMap<Name, TagPath> = HashMap::new();
+        names.insert(this_name.clone(), path_to_self.clone());
         let mut key_buf = String::new();
         let mut directive_found = false;
         let mut escmode = false;
@@ -209,15 +210,31 @@ impl Parser {
                             continue;
                         }
                         else if character == ' ' {
-                            tags.insert()
+                            tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                            continue;
+                        }
+                        else {
+                            string_buf.push(character);
                             continue;
                         }
                     }
                     else if key_buf == "alias" {
-                    }
-                    else if key_buf == "["{
-                    }
-                    else if key_buf == "pic" {
+                        if escmode {
+                            string_buf.push(character);
+                            continue;
+                        }
+                        else if character == '\\' {
+                            escmode = true;
+                            continue;
+                        }
+                        else if character == ' ' {
+                            names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                            continue;
+                        }
+                        else {
+                            string_buf.push(character);
+                            continue;
+                        }
                     }
                     else {
                         key_buf.push(character);
