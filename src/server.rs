@@ -24,7 +24,7 @@ impl GlasHaus {
         Self {
             config_path,
             names: HashMap::new(),
-            tags:        HashMap::new(),
+            tags:  HashMap::new(),
         }
     }
 
@@ -87,7 +87,7 @@ impl Parser {
             glashaus.tags = map;
         }
         while let Some(file) = self.receiver.recv().await {
-            _ = self.parse_md(file);
+            _ = self.parse_md(file).await;
         }
         todo!()
     }

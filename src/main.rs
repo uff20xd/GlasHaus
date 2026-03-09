@@ -45,9 +45,7 @@ async fn main() {
                 Poller::new("./tests/", sender).start().await;
             });
             tokio::spawn(async move {
-                while let Some(file) = receiver.recv().await {
-                    println!("Processing File {}", file.display());
-                }
+                GlasHaus::new("".into()).start(receiver).await;
             });
             loop {}
         },
