@@ -41,7 +41,7 @@ impl GlasHaus {
     }
     pub fn query_tags(&self, tags: Vec<Tag>) -> String {
         let elseh = HashSet::new();
-        let mut names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
+        let names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
         let mut query: std::collections::LinkedList<&Name> = names
             .iter()
             .filter(|name| 
@@ -150,14 +150,14 @@ impl Parser {
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
         let mut file;
-        let mut source = String::new();
+        let _source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
             file = tokio::fs::File::create_new(path).await?;
         }
         else {file = tokio::fs::File::open(path).await?;}
         let read_lock = self.runtime.read().await;
-        let mut names = read_lock.names.clone();
+        let names = read_lock.names.clone();
         drop(read_lock);
         let mut buf = String::new();
         for (name, path) in names.iter() {
@@ -179,10 +179,10 @@ impl Parser {
         else {file = tokio::fs::File::open(&path).await?;}
         _ = file.read_to_string(&mut source).await;
 
-        let path_to_self: TagPath = path.into();
+        let _path_to_self: TagPath = path.into();
         let mut sections: HashMap<String, usize> = HashMap::new();
-        let mut tags: HashMap<Tag, Name> = HashMap::new();
-        let mut names: HashMap<Name, TagPath> = HashMap::new();
+        let _tags: HashMap<Tag, Name> = HashMap::new();
+        let _names: HashMap<Name, TagPath> = HashMap::new();
         let mut key_buf = String::new();
         let mut directive_found = false;
         let mut escmode = false;
