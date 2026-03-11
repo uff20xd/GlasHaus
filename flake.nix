@@ -8,79 +8,28 @@
   outputs = { self, nixpkgs }: 
     let 
       supportedSystems = [ "x86_64-linux" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-
-      forAllSystemsTest = pkgsRaw: evaluation: (nixpkgs.lib.genAttrs supportedSystems) (system:  evaluation system pkgsRaw.${system});
-
-      pkgsRaw = nixpkgs.legacyPackages;
-      null = (val: { inherit val; none = ""; });
-    in rec {
-
-      packages = forAllSystemsTest pkgsRaw (system: pkgs:
-      rec {
-        default = pkgs.rustPlatform.buildRustPackage (finalAttrs: rec {
-          pname = "glashaus";
-          version = "0.0.1";
-          src = ./.;
-          cargoLock = {
-            lockFile = "${src}/Cargo.lock";
-          };
-        });
+      forAllSystems = pkgsRaw: overlays: evaluation: (nixpkgs.lib.genAttrs supportedSystems) (system:  evaluation system (import pkgsRaw {
+        inherit system;
+        inherit overlays;
+      }));
+    in {
+      overlays.default = final: prev: { hello = self.hello final; };
+      packages = forAllSystems nixpkgs [] (system: pkgs: rec {
+          default = glashaus;
+          glashaus = self.glashaus pkgs;
+          });
+      devShells = forAllSystems nixpkgs [] (system: pkgs: rec {
+        default = pkgs.mkShellNoCC rec {
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = with pkgs; [
+            rustc
+            cargo
+          ];
+        };
       });
-
-        #default = buildDerivation system pkgs {
-        #  name = "glashaus";
-        #  buildInputs = with pkgs; [
-        #    cargo
-        #    git
-        #    coreutils
-        #    findutils
-        #  ];
-        #  buildPhase = ''
-        #  cargo build --release -v -j1
-        #  '';
-        #  installPhase = ''
-        #  cp $src/target/release/$name $out/bin
-        #  '';
-        #  outputHashAlgo = "sha256";
-        #  outputHashMode = "recursive"; # Specify "recursive" for directories, "flat" for files
-        #  outputHash = ""; # Initially unknown, so leave it empty and let Nix find it
-        #};
-
-      buildDerivation = system: pkgs: attrs: 
-      derivation (rec {
-          buildInputs = [ pkgs.coreutils ];
-          inherit system;
-          builder = "${pkgs.bash}/bin/bash";
-          preBuild = "export HOME=$TMP";
-          args = [ "${(builderfile system pkgs)}"];
-          src = ./.;
-      } // attrs);
-
-      builderfile = system: pkgs: 
-      derivation rec {
-          name = "builderfile";
-          inherit system;
-          builder = "${pkgs.bash}/bin/bash";
-          preBuild = ''cd $src
-          '';
-          args = [ "-c" ''echo "
-set -e
-unset PATH
-for p in \$buildInputs; do
-    export PATH=\$p/bin:\$PATH
-done
-export TMP=\$(${pkgs.coreutils}/bin/mktemp -d)
-${pkgs.coreutils}/bin/mkdir -p \$out/bin
-echo "[NIXBUILDER] preBuild"
-eval \$preBuild
-echo "[NIXBUILDER] buildPhase"
-eval \$buildPhase
-echo "[NIXBUILDER] installPhase"
-eval \$installPhase
-echo "[NIXBUILDER] cleanUpPhase"
-eval \$cleanUpPhase
-" > $out''];
+      hello = pkgs: pkgs.buildRustCrate {
+        name = "glashaus";
+        src = ./.;
       };
     };
 }
