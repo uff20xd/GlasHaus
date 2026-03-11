@@ -18,7 +18,7 @@
           default = glashaus;
           glashaus = self.glashaus pkgs;
           });
-      devShells = forAllSystems nixpkgs [] (system: pkgs: rec {
+      devShells = forAllSystems nixpkgs [] (system: pkgs: {
         default = pkgs.mkShellNoCC rec {
           nativeBuildInputs = [ pkgs.pkg-config ];
           buildInputs = with pkgs; [
@@ -27,7 +27,7 @@
           ];
         };
       });
-      hello = pkgs: pkgs.buildRustCrate {
+      glashaus = pkgs: pkgs.rustPlatform.buildRustPackage {
         name = "glashaus";
         src = ./.;
       };
