@@ -30,6 +30,9 @@
       glashaus = pkgs: pkgs.rustPlatform.buildRustPackage {
         name = "glashaus";
         src = ./.;
+        buildInputs = with pkgs; [
+          rustc
+        ];
       };
     };
 }
