@@ -31,9 +31,7 @@
         name = "glashaus";
         src = ./.;
         cargoLock.lockFile = "${src}/Cargo.lock";
-        buildInputs = with pkgs; [
-          cargo
-        ];
+        buildInputs = [];
       };
     };
 }
