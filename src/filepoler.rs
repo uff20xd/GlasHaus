@@ -31,7 +31,7 @@ impl Poller {
         println!("in poll");
         loop {
             let search = self.poll();
-            let _sleep = sleep(Duration::from_secs(2)).await;
+            let _sleep = sleep(Duration::from_secs(1)).await;
             let _ = match search.await {
                 Err(_) => {break},
                 _ => {}

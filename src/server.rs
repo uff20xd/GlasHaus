@@ -32,12 +32,10 @@ impl GlasHaus {
         let config_path = self.config_path.clone();
         let wrapped_self = RwLock::new(self);
         // let mut io_socket = GlasSocket::new();
+        println!("From GlasHaus::start");
         tokio::spawn(async move {
-            Parser::new(receiver, wrapped_self, config_path.clone()).start().await;
         });
-        loop {
-
-        }
+        Parser::new(receiver, wrapped_self, config_path.clone()).start().await;
     }
     pub fn query_tags(&self, tags: Vec<Tag>) -> String {
         let elseh = HashSet::new();
@@ -81,12 +79,14 @@ impl Parser {
         }
     }
     pub async fn start(mut self) -> () {
+        println!("From Parser::start");
         {
-            let map = self.parse_tag_file("").await.expect("Currently cant really error out.");
+            let map = self.parse_tag_file("./.tag_file").await.expect("Currently cant really error out.");
             let mut glashaus = self.runtime.write().await;
             glashaus.tags = map;
         }
         while let Some(file) = self.receiver.recv().await {
+            println!("Parsing File: {}", file.display());
             _ = self.parse_md(file).await;
         }
         todo!()
@@ -191,7 +191,7 @@ impl Parser {
         let mut string_buf = String::new();
         for (index, line) in source.lines().enumerate() {
             if line.chars().next().unwrap_or_else(|| ' ') == '#' {
-                sections.insert(line[1..0].trim_ascii().to_owned(), index);
+                sections.insert(line[1..].trim_ascii().to_owned(), index);
                 continue
             }
             for character in line.chars() {
@@ -242,6 +242,9 @@ impl Parser {
                 }
             }
         }
+        dbg!(sections);
+        dbg!(names);
+        dbg!(tags);
         Ok(())
     }
 }
