@@ -209,8 +209,18 @@ impl Parser {
                             escmode = true;
                             continue;
                         }
+                        else if character == ';' || character == '\n' {
+                            if string_buf.len() != 0 {
+                                tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                            }
+                            string_buf.clear();
+                            key_buf.clear();
+                            break
+                        }
                         else if character == ' ' {
-                            tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                            if string_buf.len() != 0 {
+                                tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                            }
                             continue;
                         }
                         else {
@@ -228,8 +238,18 @@ impl Parser {
                             continue;
                         }
                         else if character == ' ' {
-                            names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                            if string_buf.len() != 0 {
+                                names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                            }
                             continue;
+                        }
+                        else if character == ';' || character == '\n' {
+                            if string_buf.len() != 0 {
+                                names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                            }
+                            string_buf.clear();
+                            key_buf.clear();
+                            break
                         }
                         else {
                             string_buf.push(character);
