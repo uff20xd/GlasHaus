@@ -27,11 +27,12 @@
           ];
         };
       });
-      glashaus = pkgs: pkgs.rustPlatform.buildRustPackage {
+      glashaus = pkgs: pkgs.rustPlatform.buildRustPackage rec {
         name = "glashaus";
         src = ./.;
+        cargoLock.lockFile = "${src}/Cargo.lock";
         buildInputs = with pkgs; [
-          rustc
+          cargo
         ];
       };
     };
