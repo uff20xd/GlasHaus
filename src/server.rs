@@ -5,7 +5,7 @@ use std::{
     }, path::{Path, PathBuf}, sync::Arc,
 };
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}
+    io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}, join, task::yield_now,
 };
 use crate::GResult;
 
@@ -33,9 +33,14 @@ impl GlasHaus {
         let wrapped_self = RwLock::new(self);
         // let mut io_socket = GlasSocket::new();
         println!("From GlasHaus::start");
-        tokio::spawn(async move {
-        });
-        Parser::new(receiver, wrapped_self, config_path.clone()).start().await;
+        join!(
+            Parser::new(receiver, wrapped_self, config_path.clone()).start(),
+            async move {
+                loop {
+                    yield_now().await
+                }
+            }
+        );
     }
     pub fn query_tags(&self, tags: Vec<Tag>) -> String {
         let elseh = HashSet::new();
