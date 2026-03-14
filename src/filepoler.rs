@@ -27,6 +27,7 @@ impl Poller {
             channel: sender,
             change_date: SystemTime::UNIX_EPOCH,
             new_change_date: SystemTime::UNIX_EPOCH,
+            config,
         }
     }
     pub async fn start(mut self) -> bool {

@@ -55,7 +55,7 @@ async fn main() {
                 Poller::new("./tests/", sender, &*config).start().await;
             });
             tokio::spawn(async move {
-                GlasHaus::new(Path::new("").into(), &*config).start(receiver).await;
+                GlasHaus::new(&*config).start(receiver).await;
             });
             loop {}
         },

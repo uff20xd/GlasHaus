@@ -30,12 +30,12 @@ impl GlasHaus {
     }
 
     pub async fn start(self, receiver: Receiver<PathBuf>) -> () {
-        let config_path = self.config_path.clone();
+        let config = self.config.clone();
         let wrapped_self = RwLock::new(self);
         // let mut io_socket = GlasSocket::new();
         println!("From GlasHaus::start");
         join!(
-            Parser::new(receiver, wrapped_self, config_path.clone()).start(),
+            Parser::new(receiver, wrapped_self, config).start(),
             async move {
                 loop {
                     yield_now().await
@@ -87,7 +87,7 @@ impl Parser {
     pub async fn start(mut self) -> () {
         println!("From Parser::start");
         {
-            let map = self.parse_tag_file("./.tag_file").await.expect("Currently cant really error out.");
+            let map = self.parse_tag_file(self.config.haus_path + "tag_file").await.expect("Currently cant really error out.");
             let mut glashaus = self.runtime.write().await;
             glashaus.tags = map;
         }
@@ -97,15 +97,15 @@ impl Parser {
         }
         todo!()
     }
-    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Tag, HashSet<Name>>> {
+    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> HashMap<Tag, HashSet<Name>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
-            file = tokio::fs::File::create_new(path).await?;
+            file = tokio::fs::File::create_new(path).await.expect();
         }
-        else {file = tokio::fs::File::open(path).await?;}
-        let _ = file.read_to_string(&mut source).await?;
+        else {file = tokio::fs::File::open(path).await.expect("The Path should exist. It could be a directory in which case go fuck yourself.");}
+        let _ = file.read_to_string(&mut source).await.expect("This File should be readable as checked above");
 
         let lines = source.lines();
         let mut tags = HashMap::new();
@@ -276,7 +276,7 @@ impl Parser {
 }
 
 pub struct Config {
-    haus_path: PathBuf,
+    pub haus_path: PathBuf,
 }
 
 impl Config {
