@@ -86,10 +86,14 @@ impl Parser {
     }
     pub async fn start(mut self) -> () {
         println!("From Parser::start");
+        let mut name_file_path = self.config.haus_path.clone();
+        name_file_path.push("name_file");
+        let mut tag_file_path = self.config.haus_path.clone();
+        tag_file_path.push("tag_file");
         {
-            let map = self.parse_tag_file(self.config.haus_path + "tag_file").await.expect("Currently cant really error out.");
+            let tags = self.parse_tag_file(tag_file_path).await;
             let mut glashaus = self.runtime.write().await;
-            glashaus.tags = map;
+            glashaus.tags = tags;
         }
         while let Some(file) = self.receiver.recv().await {
             println!("Parsing File: {}", file.display());
@@ -102,7 +106,7 @@ impl Parser {
         let mut source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
-            file = tokio::fs::File::create_new(path).await.expect();
+            file = tokio::fs::File::create_new(path).await.expect("It doesnt exist so i should be able to create it.");
         }
         else {file = tokio::fs::File::open(path).await.expect("The Path should exist. It could be a directory in which case go fuck yourself.");}
         let _ = file.read_to_string(&mut source).await.expect("This File should be readable as checked above");
@@ -124,17 +128,17 @@ impl Parser {
                 _ => continue,
             };
         }
-        Ok(tags)
+        tags
     }
-    async fn parse_name_file(&self, path: impl AsRef<Path>) -> GResult<HashMap<Name, TagPath>> {
+    async fn parse_name_file(&self, path: impl AsRef<Path>) -> HashMap<Name, TagPath> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
-            file = tokio::fs::File::create_new(path).await?;
+            file = tokio::fs::File::create_new(path).await.expect("The path doesnt exist and it should be created here.");
         }
-        else {file = tokio::fs::File::open(path).await?;}
-        let _ = file.read_to_string(&mut source).await?;
+        else {file = tokio::fs::File::open(path).await.expect("The Path should exist. It could be a directory in which case go fuck yourself.");}
+        let _ = file.read_to_string(&mut source).await.expect("Why shouldnt this be readable. Tell me.");
 
         let lines = source.lines();
         let mut names_to_path = HashMap::new();
@@ -152,7 +156,7 @@ impl Parser {
                 _ => continue,
             };
         }
-        Ok(names_to_path)
+        names_to_path
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
         let mut file;
