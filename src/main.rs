@@ -2,9 +2,13 @@ mod filepoler;
 mod server;
 
 use filepoler::*;
-use server::GlasHaus;
+use server::{
+    GlasHaus,
+    Config,
+};
 use std::{
     path::Path,
+    sync::{Arc, LazyLock}, 
 };
 use clap::{
     Parser,
@@ -15,6 +19,8 @@ use tokio::{
 };
 
 pub type GResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+static config: LazyLock<Config> = LazyLock::new(|| Config::from_file());
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -46,10 +52,10 @@ async fn main() {
         CliArgs::Test => { 
             let (sender, mut receiver) = mpsc::channel(500);
             tokio::spawn(async move {
-                Poller::new("./tests/", sender).start().await;
+                Poller::new("./tests/", sender, &*config).start().await;
             });
             tokio::spawn(async move {
-                GlasHaus::new(Path::new("").into()).start(receiver).await;
+                GlasHaus::new(Path::new("").into(), &*config).start(receiver).await;
             });
             loop {}
         },

@@ -2,7 +2,8 @@ use std::{
     collections::{
         HashMap,
         HashSet,
-    }, path::{Path, PathBuf}, sync::Arc,
+    }, path::{Path, PathBuf}, 
+    sync::{Arc, LazyLock}, 
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}, join, task::yield_now,
@@ -14,15 +15,15 @@ type Tag = Name;
 type TagPath = Arc<Path>;
 
 pub struct GlasHaus {
-    config_path: Arc<Path>,
+    config: &'static Config,
     pub names: HashMap<Name, TagPath>,
     pub  tags: HashMap<Tag, HashSet<Name>>,
 }
 
 impl GlasHaus {
-    pub fn new(config_path: Arc<Path>) -> Self {
+    pub fn new(config: &'static Config) -> Self {
         Self {
-            config_path,
+            config,
             names: HashMap::new(),
             tags:  HashMap::new(),
         }
@@ -69,18 +70,18 @@ impl GlasHaus {
 struct Parser {
     receiver: Receiver<PathBuf>,
     runtime: RwLock<GlasHaus>,
-    config_path: Arc<Path>,
+    config: &'static Config,
 }
 impl Parser {
     pub fn new(
         receiver: Receiver<PathBuf>,
         runtime: RwLock<GlasHaus>,
-        config_path: Arc<Path>,
+        config: &'static Config,
     ) -> Self {
         Self {
             receiver,
             runtime,
-            config_path,
+            config,
         }
     }
     pub async fn start(mut self) -> () {
@@ -275,11 +276,15 @@ impl Parser {
 }
 
 pub struct Config {
-    house_path: PathBuf,
+    haus_path: PathBuf,
 }
 
 impl Config {
-    fn from_file() -> Arc<Self> { todo!("") }
+    pub fn from_file() -> Self { 
+        Self {
+            haus_path: "./.glashaus/".into(),
+        }
+    }
 }
 
 pub enum GLAPICommand {

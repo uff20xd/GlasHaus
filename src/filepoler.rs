@@ -10,16 +10,18 @@ use tokio::{
     sync::mpsc::Sender,
 };
 use crate::GResult;
+use crate::server::Config;
 
 pub struct Poller {
     path: PathBuf,
     channel: Sender<PathBuf>,
     change_date: SystemTime,
     new_change_date: SystemTime,
+    config: &'static Config,
 }
 
 impl Poller {
-    pub fn new(path: impl AsRef<Path>, sender: Sender<PathBuf>) -> Self {
+    pub fn new(path: impl AsRef<Path>, sender: Sender<PathBuf>, config: &'static Config) -> Self {
         Self {
             path: path.as_ref().to_owned(),
             channel: sender,
