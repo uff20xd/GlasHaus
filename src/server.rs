@@ -30,6 +30,7 @@ impl GlasHaus {
     }
 
     pub async fn start(self, receiver: Receiver<PathBuf>) -> () {
+        self.setup_haus_dir().await;
         let config = self.config.clone();
         let wrapped_self = RwLock::new(self);
         // let mut io_socket = GlasSocket::new();
@@ -42,6 +43,15 @@ impl GlasHaus {
                 }
             }
         );
+    }
+    pub async fn setup_haus_dir(&self) -> () {
+        let mut source = String::new();
+        let path: &Path = self.config.haus_path.as_ref();
+        tokio::fs::DirBuilder::new()
+            .recursive(true)
+            .create(path)
+            .await
+            .expect("It doesnt exist so i should be able to create it.");
     }
     pub fn query_tags(&self, tags: Vec<Tag>) -> String {
         let elseh = HashSet::new();
