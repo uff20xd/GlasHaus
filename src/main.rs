@@ -6,10 +6,7 @@ use server::{
     GlasHaus,
     Config,
 };
-use std::{
-    path::Path,
-    sync::{Arc, LazyLock}, 
-};
+use std::sync::LazyLock;
 use clap::{
     Parser,
     Subcommand,
@@ -20,7 +17,7 @@ use tokio::{
 
 pub type GResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-static config: LazyLock<Config> = LazyLock::new(|| Config::from_file());
+static CONFIG: LazyLock<Config> = LazyLock::new(|| Config::from_file());
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -50,12 +47,12 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            let (sender, mut receiver) = mpsc::channel(500);
+            let (sender, receiver) = mpsc::channel(500);
             tokio::spawn(async move {
-                Poller::new("./tests/", sender, &*config).start().await;
+                Poller::new("./tests/", sender, &*CONFIG).start().await;
             });
             tokio::spawn(async move {
-                GlasHaus::new(&*config).start(receiver).await;
+                GlasHaus::new(&*CONFIG).start(receiver).await;
             });
             loop {}
         },

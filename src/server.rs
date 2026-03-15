@@ -6,7 +6,11 @@ use std::{
     sync::Arc, 
 };
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}, join, task::yield_now,
+    io::{AsyncReadExt, AsyncWriteExt},
+    sync::{RwLock, mpsc::Receiver},
+    join,
+    task::yield_now,
+    time::{Duration, sleep},
 };
 use crate::GResult;
 
@@ -31,21 +35,17 @@ impl GlasHaus {
 
     pub async fn start(self, receiver: Receiver<PathBuf>) -> () {
         self.setup_haus_dir().await;
-        let config = self.config.clone();
-        let wrapped_self = RwLock::new(self);
+        let config = self.config;
+        let wrapped_self = Arc::new(RwLock::new(self));
         // let mut io_socket = GlasSocket::new();
         println!("From GlasHaus::start");
         join!(
-            Parser::new(receiver, wrapped_self, config).start(),
-            async move {
-                loop {
-                    yield_now().await
-                }
-            }
+            Parser::new(receiver, wrapped_self.clone(), config).start(),
+            GlasWriter::new(wrapped_self.clone(), config).start(),
         );
     }
     pub async fn setup_haus_dir(&self) -> () {
-        let mut source = String::new();
+        let _source = String::new();
         let path: &Path = self.config.haus_path.as_ref();
         tokio::fs::DirBuilder::new()
             .recursive(true)
@@ -54,8 +54,7 @@ impl GlasHaus {
             .expect("It doesnt exist so i should be able to create it.");
     }
     pub fn query_tags(&self, tags: Vec<Tag>) -> String {
-        let elseh = HashSet::new();
-        let names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
+        let elseh = HashSet::new(); let names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
         let mut query: std::collections::LinkedList<&Name> = names
             .iter()
             .filter(|name| 
@@ -75,17 +74,29 @@ impl GlasHaus {
         }
         ret
     }
+    pub fn append_tags(&mut self, tags: HashMap<Tag, HashSet<Name>>) { 
+        for (tag, names) in tags.into_iter() {
+            if self.tags.contains_key(&*tag) {
+                let mut found_names = self.tags.get_mut(&*tag)
+                    .expect("This Tag exists, because its checked by contains_key()");
+                found_names.extend(names.into_iter());
+            } else {
+                self.tags.insert(tag, names);
+            }
+        }
+        todo!("Implement GlasHaus::append_tags()");
+    }
 }
 
 struct Parser {
     receiver: Receiver<PathBuf>,
-    runtime: RwLock<GlasHaus>,
+    runtime: Arc<RwLock<GlasHaus>>,
     config: &'static Config,
 }
 impl Parser {
     pub fn new(
         receiver: Receiver<PathBuf>,
-        runtime: RwLock<GlasHaus>,
+        runtime: Arc<RwLock<GlasHaus>>,
         config: &'static Config,
     ) -> Self {
         Self {
@@ -169,28 +180,6 @@ impl Parser {
             };
         }
         names_to_path
-    }
-    async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
-        let mut file;
-        let _source = String::new();
-        let path = path.as_ref();
-        if !path.exists()  {
-            file = tokio::fs::File::create_new(path).await?;
-        }
-        else {file = tokio::fs::File::open(path).await?;}
-        let read_lock = self.runtime.read().await;
-        let names = read_lock.names.clone();
-        drop(read_lock);
-        let mut buf = String::new();
-        for (name, path) in names.iter() {
-            buf = buf + name + "\n" + 
-                &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
-        }
-        file.write(buf.as_bytes()).await?;
-        Ok(())
-    }
-    async fn compile_tag_file() -> GResult<()>  {
-        todo!()
     }
     async fn parse_md(&mut self, path: PathBuf) -> GResult<()> {
         let mut file;
@@ -284,10 +273,70 @@ impl Parser {
                 }
             }
         }
-        dbg!(sections);
-        dbg!(names);
-        dbg!(tags);
+        dbg!(&sections);
+        dbg!(&names);
+        dbg!(&tags);
+         {
+             let mut write_lock = self.runtime.write().await;
+             write_lock.names.extend(names.into_iter());
+         }
         Ok(())
+    }
+}
+
+pub struct GlasWriter {
+    config: &'static Config,
+    runtime: Arc<RwLock<GlasHaus>>,
+}
+impl GlasWriter {
+    pub fn new(
+        runtime: Arc<RwLock<GlasHaus>>,
+        config: &'static Config,
+        ) -> Self {
+        Self {
+            runtime,
+            config,
+        }
+    }
+    pub async fn start(mut self) -> Self {
+        let mut name_file_path = self.config.haus_path.clone();
+        name_file_path.push("name_file");
+        let mut tag_file_path = self.config.haus_path.clone();
+        tag_file_path.push("tag_file");
+        loop {
+            let _sleep = sleep(Duration::from_secs(1)).await;
+            self.compile_name_file(&name_file_path).await.expect("Fix it when it happens!");
+            // self.compile_tag_file(&name_file_path).await.expect("Fix it when it happens!");
+        }
+    }
+    async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
+        println!("Level 0");
+        let mut file;
+        let _source = String::new();
+        let path = path.as_ref();
+        if !path.exists()  {
+            file = tokio::fs::File::create_new(path).await?;
+        }
+        else {file = tokio::fs::File::open(path).await?;}
+        println!("Level 1");
+        let read_lock = self.runtime.read().await;
+        println!("Level 2");
+        let names = read_lock.names.clone();
+        drop(read_lock);
+        println!("Level 3");
+        let mut buf = String::new();
+        for (name, path) in names.iter() {
+            buf = buf + name + "\n" + 
+                &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
+            println!("Level 3.1");
+        }
+        println!("Level 4");
+        file.write(buf.as_bytes()).await?;
+        println!("Level 5");
+        Ok(())
+    }
+    async fn compile_tag_file() -> GResult<()>  {
+        todo!()
     }
 }
 
@@ -301,17 +350,4 @@ impl Config {
             haus_path: "./.glashaus/".into(),
         }
     }
-}
-
-pub enum GLAPICommand {
-    QueryTag(String),
-    QueryTags(Vec<String>),
-    GetNameOrAlias(String),
-    None
-}
-
-pub enum GLAPIResponse {
-    QueryResponse(Vec<(Name, TagPath)>),
-    Name(Name),
-    None
 }
