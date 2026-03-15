@@ -3,7 +3,7 @@ use std::{
         HashMap,
         HashSet,
     }, path::{Path, PathBuf}, 
-    sync::{Arc, LazyLock}, 
+    sync::Arc, 
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt}, sync::{RwLock, mpsc::Receiver}, join, task::yield_now,
@@ -102,8 +102,10 @@ impl Parser {
         tag_file_path.push("tag_file");
         {
             let tags = self.parse_tag_file(tag_file_path).await;
+            let names = self.parse_name_file(name_file_path).await;
             let mut glashaus = self.runtime.write().await;
             glashaus.tags = tags;
+            glashaus.names = names;
         }
         while let Some(file) = self.receiver.recv().await {
             println!("Parsing File: {}", file.display());
