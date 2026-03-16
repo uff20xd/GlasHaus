@@ -148,9 +148,9 @@ impl GlasParser {
             designator_char = line.chars().next().unwrap_or_else(|| ' ');
             _ = match designator_char {
                 '#' => {
+                    tag = Arc::from(&line[1..]);
                     _ = tags.insert(tag, tagged_names.clone());
                     _ = tagged_names.clear();
-                    tag = Arc::from(&line[1..]);
                 },
                 ';' => _ = tagged_names.insert(Arc::from((&line[1..]).as_ref())),
                 _ => continue,
@@ -202,9 +202,14 @@ impl GlasParser {
         let mut names: HashSet<Name> = HashSet::new();
         names.insert(this_name.clone());
         let mut key_buf = String::new();
-        let mut directive_found = false; let mut escmode = false;
+        let mut directive_found = false;
+        let mut escmode = false;
         let mut string_buf = String::new();
         for (index, line) in source.lines().enumerate() {
+            string_buf.clear();
+            key_buf.clear();
+            escmode = false;
+            directive_found = false;
             if line.chars().next().unwrap_or_else(|| ' ') == '#' {
                 sections.insert(line[1..].trim_ascii().to_owned(), index);
                 continue
@@ -349,10 +354,10 @@ impl GlasWriter {
 
         let mut buf = String::new();
         for (tag, names) in tags.iter() {
-            buf = buf + "#" + tag + "\n";
             for name in names.iter() {
                 buf = buf + ";" + name + "\n";
             }
+            buf = buf + "#" + tag + "\n";
         }
         file.write(buf.as_bytes()).await?;
         Ok(())
