@@ -1,9 +1,12 @@
-;test
-;name
-#libraryother_tag
 ;name
 ;test
-#libraryothertag
+#othertag
+;test
+;name
+;index
+;main
+#library
+ag
 ;test
 ;main
 ;index

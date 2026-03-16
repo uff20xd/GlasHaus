@@ -250,6 +250,7 @@ impl GlasParser {
                             if string_buf.len() != 0 {
                                 tags.push(Arc::from(string_buf.clone()));
                             }
+                            string_buf.clear();
                             continue;
                         }
                         else {
@@ -270,6 +271,7 @@ impl GlasParser {
                             if string_buf.len() != 0 {
                                 names.insert(Arc::from(string_buf.clone()));
                             }
+                            string_buf.clear();
                             continue;
                         }
                         else if character == ';' || character == '\n' {
