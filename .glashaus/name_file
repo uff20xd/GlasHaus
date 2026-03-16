@@ -1,10 +1,10 @@
-two
-./tests/two
-name
-./tests/name.md
-three
-./tests/three
 one
 ./tests/one
+name
+./tests/name.md
 index
 ./tests/index.md
+three
+./tests/three
+two
+./tests/two

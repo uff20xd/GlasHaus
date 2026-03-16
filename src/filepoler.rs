@@ -40,7 +40,7 @@ impl Poller {
                 _ => {}
             };
             self.change_date = self.new_change_date;
-            let _sleep = sleep(Duration::from_millis(200)).await;
+            let _sleep = sleep(Duration::from_millis(300)).await;
         }
         false
     }

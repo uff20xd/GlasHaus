@@ -13,6 +13,7 @@ use clap::{
 };
 use tokio::{
     sync::mpsc,
+    join,
 };
 
 pub type GResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -28,9 +29,7 @@ struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 enum CliArgs {
-    Start {
-        name: String
-    },
+    Start,
     Init,
     Config {
         setting: String,
@@ -43,18 +42,17 @@ enum CliArgs {
 async fn main() {
     let args = Args::parse();
     match args.command {
-        CliArgs::Start { name: _ } => { todo!( ) },
+        CliArgs::Start => {
+            let (sender, receiver) = mpsc::channel(500);
+            join!(
+                Poller::new("./tests/", sender, &*CONFIG).start(),
+                GlasHaus::new(&*CONFIG).start(receiver),
+            );
+        },
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            let (sender, receiver) = mpsc::channel(500);
-            tokio::spawn(async move {
-                Poller::new("./tests/", sender, &*CONFIG).start().await;
-            });
-            tokio::spawn(async move {
-                GlasHaus::new(&*CONFIG).start(receiver).await;
-            });
-            loop {}
+            
         },
     }
 }

@@ -144,15 +144,15 @@ impl Parser {
         let mut tagged_names = HashSet::new();
         let mut tag = Arc::from("");
         let mut designator_char;
-        for i in lines {
-            designator_char = i.chars().next().unwrap_or_else(|| ' ');
+        for line in lines {
+            designator_char = line.chars().next().unwrap_or_else(|| ' ');
             _ = match designator_char {
                 '#' => {
                     _ = tags.insert(tag, tagged_names.clone());
                     _ = tagged_names.clear();
-                    tag = Arc::from(&i[1..]);
+                    tag = Arc::from(&line[1..]);
                 },
-                ';' => _ = tagged_names.insert(Arc::from((&i[1..]).as_ref())),
+                ';' => _ = tagged_names.insert(Arc::from((&line[1..]).as_ref())),
                 _ => continue,
             };
         }
@@ -172,14 +172,14 @@ impl Parser {
         let mut names_to_path = HashMap::new();
         let mut current_name: Name = Arc::from("");
         let mut designator_char;
-        for i in lines {
-            designator_char = i.chars().next().unwrap_or_else(|| ' ');
+        for line in lines {
+            designator_char = line.chars().next().unwrap_or_else(|| ' ');
             _ = match designator_char {
                 '=' => {
-                    names_to_path.insert(current_name.clone(), Arc::from((&i[1..]).as_ref()));
+                    names_to_path.insert(current_name.clone(), Arc::from((&line[1..]).as_ref()));
                 },
                 ';' => {
-                    current_name = Arc::from((&i[1..]).as_ref());
+                    current_name = Arc::from((&line[1..]).as_ref());
                 },
                 _ => continue,
             };
@@ -309,7 +309,7 @@ impl GlasWriter {
         let mut tag_file_path = self.config.haus_path.clone();
         tag_file_path.push("tag_file");
         loop {
-            let _sleep = sleep(Duration::from_millis(200)).await;
+            let _sleep = sleep(Duration::from_millis(400)).await;
             self.compile_name_file(&name_file_path).await.expect("Fix it when it happens!");
             self.compile_tag_file(&tag_file_path).await.expect("Fix it when it happens!");
         }
@@ -330,7 +330,6 @@ impl GlasWriter {
         for (name, path) in names.iter() {
             buf = buf + name + "\n" + 
                 &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
-            println!("name_in_buf");
         }
         file.write(buf.as_bytes()).await?;
         Ok(())
@@ -348,17 +347,13 @@ impl GlasWriter {
         let tags = read_lock.tags.clone();
         drop(read_lock);
 
-        println!("Break 1");
         let mut buf = String::new();
         for (tag, names) in tags.iter() {
             for name in names.iter() {
-                println!("In names.iter() for with: {}", name);
                 buf = buf + ";" + name + "\n";
             }
-            println!("In tags.iter() for with: {}", tag);
             buf = buf + "#" + tag + "\n";
         }
-        dbg!(&buf);
         file.write(buf.as_bytes()).await?;
         Ok(())
     }
