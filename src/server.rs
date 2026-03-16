@@ -52,7 +52,7 @@ impl GlasHaus {
             .await
             .expect("It doesnt exist so i should be able to create it.");
     }
-    pub fn query_tags(&self, tags: Vec<Tag>) -> String {
+    pub fn query_tags(&self, print_paths: bool, split_str: impl AsRef<str>, tags: Vec<Tag>) -> String {
         let elseh = HashSet::new(); let names = self.tags.get(&tags[0]).unwrap_or_else(|| &elseh);
         let mut query: std::collections::LinkedList<&Name> = names
             .iter()
@@ -63,6 +63,7 @@ impl GlasHaus {
                 )
             .collect();
         let mut ret: String;
+        let split = split_str.as_ref();
         if let Some(name) = query.pop_front() {
             ret = (**name).into();
         } else {
@@ -70,6 +71,9 @@ impl GlasHaus {
         }
         for name in query {
             ret = ret + "\n" + name.as_ref();
+            if print_paths {
+                ret = ret + split + &self.get_path_for_name(name);
+            }
         }
         ret
     }
