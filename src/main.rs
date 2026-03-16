@@ -66,7 +66,7 @@ async fn main() {
             dbg!(&names);
             dbg!(&native_tags);
             let glashaus = GlasHaus::new(&*CONFIG, names, native_tags);
-            let query = glashaus.query_tags(tags.into_iter().map(|item| Arc::from(item)).collect());
+            let query = glashaus.query_tags(true, tags.into_iter().map(|item| Arc::from(item)).collect());
             println!("From Query: \n{}", query);
         },
         CliArgs::Init  => { todo!( ) },

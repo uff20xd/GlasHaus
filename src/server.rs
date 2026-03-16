@@ -13,7 +13,6 @@ use tokio::{
     time::{Duration, sleep},
 };
 use crate::GResult;
-
 type Name = Arc<str>;
 type Tag = Name;
 type TagPath = Arc<Path>;
@@ -73,6 +72,12 @@ impl GlasHaus {
             ret = ret + "\n" + name.as_ref();
         }
         ret
+    }
+    pub fn get_path_for_name(&self, name: &impl AsRef<str>) -> String {
+        match self.names.get(name.as_ref()) {
+            Some(path) => { AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy().into() },
+            None => { String::new() }
+        }
     }
     pub fn append_tags(&mut self, tags: Vec<Tag>, names: HashSet<Name>) { 
         for tag in tags.into_iter() {
