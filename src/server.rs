@@ -196,8 +196,7 @@ impl Parser {
         let mut names: HashMap<Name, TagPath> = HashMap::new();
         names.insert(this_name.clone(), path_to_self.clone());
         let mut key_buf = String::new();
-        let mut directive_found = false;
-        let mut escmode = false;
+        let mut directive_found = false; let mut escmode = false;
         let mut string_buf = String::new();
         for (index, line) in source.lines().enumerate() {
             if line.chars().next().unwrap_or_else(|| ' ') == '#' {
@@ -309,29 +308,24 @@ impl GlasWriter {
         }
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
-        println!("Level 0");
         let mut file;
         let _source = String::new();
         let path = path.as_ref();
         if !path.exists()  {
             file = tokio::fs::File::create_new(path).await?;
+            println!("Namefile doesnt exist, create new")
         }
-        else {file = tokio::fs::File::open(path).await?;}
-        println!("Level 1");
+        else {file = tokio::fs::File::options().write(true).open(path).await?;}
         let read_lock = self.runtime.read().await;
-        println!("Level 2");
         let names = read_lock.names.clone();
         drop(read_lock);
-        println!("Level 3");
         let mut buf = String::new();
         for (name, path) in names.iter() {
             buf = buf + name + "\n" + 
                 &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
-            println!("Level 3.1");
+            println!("name_in_buf");
         }
-        println!("Level 4");
         file.write(buf.as_bytes()).await?;
-        println!("Level 5");
         Ok(())
     }
     async fn compile_tag_file() -> GResult<()>  {
