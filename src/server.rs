@@ -84,7 +84,6 @@ impl GlasHaus {
                 self.tags.insert(tag, names);
             }
         }
-        todo!("Implement GlasHaus::append_tags()");
     }
 }
 
@@ -274,10 +273,11 @@ impl Parser {
         dbg!(&sections);
         dbg!(&names);
         dbg!(&tags);
-         {
-             let mut write_lock = self.runtime.write().await;
-             write_lock.names.extend(names.into_iter());
-         }
+        {
+            let mut write_lock = self.runtime.write().await;
+            write_lock.names.extend(names.into_iter());
+            write_lock.append_tags(tags);
+        }
         Ok(())
     }
 }
