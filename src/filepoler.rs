@@ -32,14 +32,15 @@ impl Poller {
     }
     pub async fn start(mut self) -> bool {
         println!("in poll");
+        let _sleep = sleep(Duration::from_millis(50)).await;
         loop {
             let search = self.poll();
-            let _sleep = sleep(Duration::from_secs(1)).await;
             let _ = match search.await {
                 Err(_) => {break},
                 _ => {}
             };
             self.change_date = self.new_change_date;
+            let _sleep = sleep(Duration::from_millis(200)).await;
         }
         false
     }

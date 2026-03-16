@@ -74,15 +74,20 @@ impl GlasHaus {
         }
         ret
     }
-    pub fn append_tags(&mut self, tags: HashMap<Tag, HashSet<Name>>) { 
-        for (tag, names) in tags.into_iter() {
+    pub fn append_tags(&mut self, tags: Vec<Tag>, names: HashSet<Name>) { 
+        for tag in tags.into_iter() {
             if self.tags.contains_key(&*tag) {
                 let mut found_names = self.tags.get_mut(&*tag)
                     .expect("This Tag exists, because its checked by contains_key()");
-                found_names.extend(names.into_iter());
+                found_names.extend(names.clone().into_iter());
             } else {
-                self.tags.insert(tag, names);
+                self.tags.insert(tag, names.clone());
             }
+        }
+    }
+    pub fn append_names(&mut self, names: HashSet<Name>, path: TagPath) {
+        for name in names.into_iter() {
+            self.names.insert(name, path.clone());
         }
     }
 }
@@ -110,13 +115,15 @@ impl Parser {
         name_file_path.push("name_file");
         let mut tag_file_path = self.config.haus_path.clone();
         tag_file_path.push("tag_file");
-        {
-            let tags = self.parse_tag_file(tag_file_path).await;
-            let names = self.parse_name_file(name_file_path).await;
-            let mut glashaus = self.runtime.write().await;
-            glashaus.tags = tags;
-            glashaus.names = names;
-        }
+
+        // Maybe make this into a feature, but pcs are fast nowadays so startup I can stomach
+        // {
+        //     let tags = self.parse_tag_file(tag_file_path).await;
+        //     let names = self.parse_name_file(name_file_path).await;
+        //     let mut glashaus = self.runtime.write().await;
+        //     glashaus.tags = tags;
+        //     glashaus.names = names;
+        // }
         while let Some(file) = self.receiver.recv().await {
             println!("Parsing File: {}", file.display());
             _ = self.parse_md(file).await;
@@ -188,12 +195,12 @@ impl Parser {
         else {file = tokio::fs::File::open(&path).await?;}
         _ = file.read_to_string(&mut source).await;
 
-        let path_to_self: TagPath = path.into();
-        let this_name: Name = path_to_self.file_stem().expect("File doesnt have a name for some reason.").to_string_lossy().into();
+        let this_path: TagPath = path.into();
+        let this_name: Name = this_path.file_stem().expect("File doesnt have a name for some reason.").to_string_lossy().into();
         let mut sections: HashMap<String, usize> = HashMap::new();
-        let mut tags: HashMap<Tag, Name> = HashMap::new();
-        let mut names: HashMap<Name, TagPath> = HashMap::new();
-        names.insert(this_name.clone(), path_to_self.clone());
+        let mut tags: Vec<Tag> = Vec::new();
+        let mut names: HashSet<Name> = HashSet::new();
+        names.insert(this_name.clone());
         let mut key_buf = String::new();
         let mut directive_found = false; let mut escmode = false;
         let mut string_buf = String::new();
@@ -219,7 +226,7 @@ impl Parser {
                         }
                         else if character == ';' || character == '\n' {
                             if string_buf.len() != 0 {
-                                tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                                tags.push(Arc::from(string_buf.clone()));
                             }
                             string_buf.clear();
                             key_buf.clear();
@@ -227,7 +234,7 @@ impl Parser {
                         }
                         else if character == ' ' {
                             if string_buf.len() != 0 {
-                                tags.insert(Arc::from(string_buf.clone()), this_name.clone());
+                                tags.push(Arc::from(string_buf.clone()));
                             }
                             continue;
                         }
@@ -247,13 +254,13 @@ impl Parser {
                         }
                         else if character == ' ' {
                             if string_buf.len() != 0 {
-                                names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                                names.insert(Arc::from(string_buf.clone()));
                             }
                             continue;
                         }
                         else if character == ';' || character == '\n' {
                             if string_buf.len() != 0 {
-                                names.insert(Arc::from(string_buf.clone()), path_to_self.clone());
+                                names.insert(Arc::from(string_buf.clone()));
                             }
                             string_buf.clear();
                             key_buf.clear();
@@ -275,8 +282,8 @@ impl Parser {
         dbg!(&tags);
         {
             let mut write_lock = self.runtime.write().await;
-            write_lock.names.extend(names.into_iter());
-            write_lock.append_tags(tags);
+            write_lock.append_names(names.clone(), this_path);
+            write_lock.append_tags(tags, names);
         }
         Ok(())
     }
@@ -302,9 +309,9 @@ impl GlasWriter {
         let mut tag_file_path = self.config.haus_path.clone();
         tag_file_path.push("tag_file");
         loop {
-            let _sleep = sleep(Duration::from_secs(1)).await;
+            let _sleep = sleep(Duration::from_millis(200)).await;
             self.compile_name_file(&name_file_path).await.expect("Fix it when it happens!");
-            // self.compile_tag_file(&name_file_path).await.expect("Fix it when it happens!");
+            self.compile_tag_file(&tag_file_path).await.expect("Fix it when it happens!");
         }
     }
     async fn compile_name_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
@@ -328,8 +335,32 @@ impl GlasWriter {
         file.write(buf.as_bytes()).await?;
         Ok(())
     }
-    async fn compile_tag_file() -> GResult<()>  {
-        todo!()
+    async fn compile_tag_file(&self, path: impl AsRef<Path>) -> GResult<()>  {
+        let mut file;
+        let _source = String::new();
+        let path = path.as_ref();
+        if !path.exists()  {
+            file = tokio::fs::File::create_new(path).await?;
+            println!("Tagfile doesnt exist, create new")
+        }
+        else {file = tokio::fs::File::options().write(true).open(path).await?;}
+        let read_lock = self.runtime.read().await;
+        let tags = read_lock.tags.clone();
+        drop(read_lock);
+
+        println!("Break 1");
+        let mut buf = String::new();
+        for (tag, names) in tags.iter() {
+            for name in names.iter() {
+                println!("In names.iter() for with: {}", name);
+                buf = buf + ";" + name + "\n";
+            }
+            println!("In tags.iter() for with: {}", tag);
+            buf = buf + "#" + tag + "\n";
+        }
+        dbg!(&buf);
+        file.write(buf.as_bytes()).await?;
+        Ok(())
     }
 }
 
