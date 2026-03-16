@@ -5,8 +5,11 @@ use filepoler::*;
 use server::{
     GlasHaus,
     Config,
+    GlasParser,
 };
 use std::sync::LazyLock;
+use std::sync::Arc;
+use std::collections::HashMap;
 use clap::{
     Parser,
     Subcommand,
@@ -31,6 +34,9 @@ struct Args {
 enum CliArgs {
     Start,
     Init,
+    Query {
+        tags: Vec<String>,
+    },
     Config {
         setting: String,
         new_value: String
@@ -46,13 +52,25 @@ async fn main() {
             let (sender, receiver) = mpsc::channel(500);
             join!(
                 Poller::new("./tests/", sender, &*CONFIG).start(),
-                GlasHaus::new(&*CONFIG).start(receiver),
+                GlasHaus::new(&*CONFIG, HashMap::new(), HashMap::new()).start(receiver),
             );
+        },
+        CliArgs::Query { tags } => {
+            let mut name_file_path = CONFIG.haus_path.clone();
+            name_file_path.push("name_file");
+            let mut tag_file_path = CONFIG.haus_path.clone();
+            tag_file_path.push("tag_file");
+
+            let names = GlasParser::parse_name_file(name_file_path).await;
+            let native_tags = GlasParser::parse_tag_file(tag_file_path).await;
+            dbg!(&names);
+            dbg!(&native_tags);
+            let glashaus = GlasHaus::new(&*CONFIG, names, native_tags);
+            let query = glashaus.query_tags(tags.into_iter().map(|item| Arc::from(item)).collect());
         },
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
-            
         },
     }
 }

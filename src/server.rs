@@ -25,11 +25,11 @@ pub struct GlasHaus {
 }
 
 impl GlasHaus {
-    pub fn new(config: &'static Config) -> Self {
+    pub fn new(config: &'static Config, names: HashMap<Name, TagPath>, tags: HashMap<Tag, HashSet<Name>>) -> Self {
         Self {
             config,
-            names: HashMap::new(),
-            tags:  HashMap::new(),
+            names,
+            tags,
         }
     }
 
@@ -40,7 +40,7 @@ impl GlasHaus {
         // let mut io_socket = GlasSocket::new();
         println!("From GlasHaus::start");
         join!(
-            Parser::new(receiver, wrapped_self.clone(), config).start(),
+            GlasParser::new(receiver, wrapped_self.clone(), config).start(),
             GlasWriter::new(wrapped_self.clone(), config).start(),
         );
     }
@@ -92,12 +92,12 @@ impl GlasHaus {
     }
 }
 
-struct Parser {
+pub struct GlasParser {
     receiver: Receiver<PathBuf>,
     runtime: Arc<RwLock<GlasHaus>>,
     config: &'static Config,
 }
-impl Parser {
+impl GlasParser {
     pub fn new(
         receiver: Receiver<PathBuf>,
         runtime: Arc<RwLock<GlasHaus>>,
@@ -110,7 +110,7 @@ impl Parser {
         }
     }
     pub async fn start(mut self) -> () {
-        println!("From Parser::start");
+        println!("From GlasParser::start");
         let mut name_file_path = self.config.haus_path.clone();
         name_file_path.push("name_file");
         let mut tag_file_path = self.config.haus_path.clone();
@@ -129,7 +129,7 @@ impl Parser {
             _ = self.parse_md(file).await;
         }
     }
-    async fn parse_tag_file(&self, path: impl AsRef<Path>) -> HashMap<Tag, HashSet<Name>> {
+    pub async fn parse_tag_file(path: impl AsRef<Path>) -> HashMap<Tag, HashSet<Name>> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
@@ -158,7 +158,7 @@ impl Parser {
         }
         tags
     }
-    async fn parse_name_file(&self, path: impl AsRef<Path>) -> HashMap<Name, TagPath> {
+    pub async fn parse_name_file(path: impl AsRef<Path>) -> HashMap<Name, TagPath> {
         let mut file;
         let mut source = String::new();
         let path = path.as_ref();
@@ -328,8 +328,8 @@ impl GlasWriter {
         drop(read_lock);
         let mut buf = String::new();
         for (name, path) in names.iter() {
-            buf = buf + name + "\n" + 
-                &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
+            buf = buf + ";" + name + "\n" + 
+                "=" + &AsRef::<std::ffi::OsStr>::as_ref(&(**path)).to_string_lossy() + "\n";
         }
         file.write(buf.as_bytes()).await?;
         Ok(())
@@ -349,10 +349,10 @@ impl GlasWriter {
 
         let mut buf = String::new();
         for (tag, names) in tags.iter() {
+            buf = buf + "#" + tag + "\n";
             for name in names.iter() {
                 buf = buf + ";" + name + "\n";
             }
-            buf = buf + "#" + tag + "\n";
         }
         file.write(buf.as_bytes()).await?;
         Ok(())
