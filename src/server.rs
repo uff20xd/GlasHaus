@@ -122,7 +122,6 @@ impl Parser {
             println!("Parsing File: {}", file.display());
             _ = self.parse_md(file).await;
         }
-        todo!()
     }
     async fn parse_tag_file(&self, path: impl AsRef<Path>) -> HashMap<Tag, HashSet<Name>> {
         let mut file;
