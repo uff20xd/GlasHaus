@@ -4,6 +4,10 @@ use std::{
         HashSet,
     }, path::{Path, PathBuf}, 
     sync::Arc, 
+    io::{
+        Read, Write, pipe,
+        PipeWriter, PipeReader,
+    }
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -372,6 +376,42 @@ impl GlasWriter {
         }
         file.write(buf.as_bytes()).await?;
         Ok(())
+    }
+}
+
+enum PipeDirection {
+    ToThisServer,
+    FromThisServer,
+}
+
+struct PipePair {
+    reader: PipeReader,
+    writer: PipeWriter,
+    direction: PipeDirection,
+}
+
+impl PipePair {
+    pub fn new(direction: PipeDirection) -> GResult<Self> {
+        let (reader, writer) = pipe()?;
+        Ok(Self {
+            reader,
+            writer,
+            direction,
+        })
+    }
+}
+
+pub struct PipeManager {
+    pipe_in: PipePair,
+    pipe_out: PipePair,
+}
+
+impl PipeManager {
+    pub fn new() -> GResult<Self> {
+        Ok(Self {
+            pipe_in: PipePair::new(PipeDirection::ToThisServer)?,
+            pipe_out: PipePair::new(PipeDirection::FromThisServer)?,
+        })
     }
 }
 
