@@ -1,5 +1,5 @@
 unsafe extern "C" {
-    fn mkfifo(input: CString, mode: u64) -> ();
+    fn mkfifo(input: *const c_char, mode: u64) -> ();
 }
 use std::{
     collections::{
@@ -7,7 +7,10 @@ use std::{
         HashSet,
     }, path::{Path, PathBuf}, 
     sync::Arc, 
-    ffi::CString,
+    ffi::{
+        CString,
+        c_char,
+    },
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -387,9 +390,20 @@ pub(crate) struct PipeManager {
 
 impl PipeManager {
     pub fn new() -> Self {
-
-        let pipe_in: PathBuf = PathBuf::new();
-        let pipe_out: PathBuf = PathBuf::new();
+        let name_in = "/tmp/glashaus_in";
+        let name_out = "/tmp/glashaus_out";
+        unsafe  {
+            mkfifo(
+                CString::new(name_in).expect("Couldnt create Cstring name_in in PipeManager::new()").as_ptr(),
+                777
+            );
+            mkfifo(
+                CString::new(name_out).expect("Couldnt create Cstring name_out in PipeManager::new()").as_ptr(),
+                777
+            );
+        }
+        let pipe_in: PathBuf = name_in.into();
+        let pipe_out: PathBuf = name_out.into();
         Self {
             pipe_in,
             pipe_out,

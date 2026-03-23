@@ -75,8 +75,9 @@ async fn main() {
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
             let pipes = PipeManager::new();
+            let fd = &pipes.pipe_in;
             loop {
-                // println!("pipe_in: {:?}", fd);
+                println!("pipe_in: {}", fd.display());
                 tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
         },
