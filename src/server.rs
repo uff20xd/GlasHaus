@@ -1,13 +1,13 @@
+unsafe extern "C" {
+    fn mkfifo() -> ();
+}
 use std::{
     collections::{
         HashMap,
         HashSet,
     }, path::{Path, PathBuf}, 
     sync::Arc, 
-    io::{
-        Read, Write, pipe,
-        PipeWriter, PipeReader,
-    }
+    ffi::CString,
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -379,38 +379,17 @@ impl GlasWriter {
     }
 }
 
-enum PipeDirection {
-    ToThisServer,
-    FromThisServer,
-}
 
-struct PipePair {
-    reader: PipeReader,
-    writer: PipeWriter,
-    direction: PipeDirection,
-}
-
-impl PipePair {
-    pub fn new(direction: PipeDirection) -> GResult<Self> {
-        let (reader, writer) = pipe()?;
-        Ok(Self {
-            reader,
-            writer,
-            direction,
-        })
-    }
-}
-
-pub struct PipeManager {
-    pipe_in: PipePair,
-    pipe_out: PipePair,
+pub(crate) struct PipeManager {
+    pub pipe_in: PathBuf,
+    pub pipe_out: PathBuf,
 }
 
 impl PipeManager {
     pub fn new() -> GResult<Self> {
         Ok(Self {
-            pipe_in: PipePair::new(PipeDirection::ToThisServer)?,
-            pipe_out: PipePair::new(PipeDirection::FromThisServer)?,
+            pipe_in: PathBuf::new(),
+            pipe_out: PathBuf::new(),
         })
     }
 }

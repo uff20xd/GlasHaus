@@ -6,10 +6,12 @@ use server::{
     GlasHaus,
     Config,
     GlasParser,
+    PipeManager,
 };
 use std::sync::LazyLock;
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::os::fd::AsFd;
 use clap::{
     Parser,
     Subcommand,
@@ -72,6 +74,11 @@ async fn main() {
         CliArgs::Init  => { todo!( ) },
         CliArgs::Config { setting: _, new_value: _ } => { todo!( ) },
         CliArgs::Test => { 
+            let pipes = PipeManager::new().expect("Please give me da pipe.");
+            loop {
+                // println!("pipe_in: {:?}", fd);
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            }
         },
     }
 }
