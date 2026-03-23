@@ -386,11 +386,13 @@ pub(crate) struct PipeManager {
 }
 
 impl PipeManager {
-    pub fn new() -> GResult<Self> {
-        Ok(Self {
-            pipe_in: PathBuf::new(),
-            pipe_out: PathBuf::new(),
-        })
+    pub fn new() -> Self {
+        let pipe_in = PathBuf::new();
+        let pipe_out = PathBuf::new();
+        Self {
+            pipe_in,
+            pipe_out,
+        }
     }
 }
 
