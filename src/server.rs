@@ -1,5 +1,5 @@
 unsafe extern "C" {
-    fn mkfifo() -> ();
+    fn mkfifo(input: CString, mode: u64) -> ();
 }
 use std::{
     collections::{
@@ -387,8 +387,9 @@ pub(crate) struct PipeManager {
 
 impl PipeManager {
     pub fn new() -> Self {
-        let pipe_in = PathBuf::new();
-        let pipe_out = PathBuf::new();
+
+        let pipe_in: PathBuf = PathBuf::new();
+        let pipe_out: PathBuf = PathBuf::new();
         Self {
             pipe_in,
             pipe_out,
